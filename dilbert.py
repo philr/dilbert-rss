@@ -8,6 +8,7 @@ http://github.com/fredley/dilbert-rss
 """
 
 import urllib2, datetime, sys, re
+from urlparse import urljoin
 import PyRSS2Gen
 from BeautifulSoup import BeautifulSoup
 
@@ -16,7 +17,7 @@ def getDetails(url, baseURL):
     soup = BeautifulSoup(page)
     date = soup.findAll('date')[0].text
     pubDate = datetime.datetime.strptime(date, "%A %B %d,%Y")
-    img = soup.findAll('div', {'class': 'img-comic-container' })[0].find('img')['src']
+    img = urljoin(baseURL, soup.findAll('div', {'class': 'img-comic-container' })[0].find('img')['src'])
 
     results = {}
     results['item'] = PyRSS2Gen.RSSItem(
@@ -29,21 +30,21 @@ def getDetails(url, baseURL):
     results['prev_href'] = soup.findAll('div', {'class': re.compile('nav-left')})[0].find('a')['href']
     return results
 
-url = 'http://dilbert.com'
+url = 'https://dilbert.com'
 page = urllib2.urlopen(url).read()
 soup = BeautifulSoup(page)
-nextUrl = soup.findAll('div', {'class': re.compile('comic-item-container') })[0].find('a')['href']
+nextUrl = urljoin(url, soup.findAll('div', {'class': re.compile('comic-item-container') })[0].find('a')['href'])
 strips = []
 
 for i in range(0,10):
     details = getDetails(nextUrl,url)
     strips.append(details['item'])
-    nextUrl = url + details['prev_href']
+    nextUrl = urljoin(url, details['prev_href'])
 
 # Construct RSS
 rss = PyRSS2Gen.RSS2(
     title = "Dilbert Daily Strip",
-    link = "http://dilbert.com",
+    link = url,
     description = "An unofficial RSS feed for dilbert.com.",
     lastBuildDate = datetime.datetime.now(),
     items = strips)
